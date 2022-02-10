@@ -5,6 +5,8 @@ const axios = require("axios")
 const { MessageEmbed } = require('discord.js');
 const { SlashCommandBuilder } = require("@discordjs/builders")
 
+const puppeteer = require('puppeteer')
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("rlstats")
@@ -17,8 +19,17 @@ module.exports = {
         const user = interaction.options.get("query").value
 
         try {
-            const { data: { data } } = await axios.get(encodeURI(`https://api.tracker.gg/api/v2/rocket-league/standard/profile/epic/${user}`))
-            
+            const browser = await puppeteer.launch()
+            const page = await browser.newPage()
+
+            await page.goto(encodeURI(`https://api.tracker.gg/api/v2/rocket-league/standard/profile/epic/${user}`))
+
+            const pre = await page.$('pre');
+            const response = await page.evaluate(body => body.innerHTML, pre);
+            await pre.dispose();
+
+            const { data: data } = JSON.parse(response)
+
             const embed = new MessageEmbed()
                 .setTitle(`Stats for **${user}**`)
                 .setDescription("")
@@ -43,7 +54,11 @@ module.exports = {
             embed.setImage(highest.icon)
 
             await interaction.reply({ embeds: [embed] })
-        } catch {
+
+            await browser.close()
+        } catch(e) {
+            console.log(e)
+
             interaction.reply("User could not be found!")
             return
         }
