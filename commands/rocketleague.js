@@ -5,8 +5,6 @@ const axios = require("axios")
 const { MessageEmbed } = require('discord.js');
 const { SlashCommandBuilder } = require("@discordjs/builders")
 
-const puppeteer = require('puppeteer')
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("rlstats")
@@ -15,11 +13,10 @@ module.exports = {
             option
                 .setName("query")
                 .setDescription("The username of the user to query")),
-    async execute(interaction) {
+    async execute(interaction, browser) {
         const user = interaction.options.get("query").value
 
         try {
-            const browser = await puppeteer.launch()
             const page = await browser.newPage()
 
             await page.goto(encodeURI(`https://api.tracker.gg/api/v2/rocket-league/standard/profile/epic/${user}`))
@@ -55,7 +52,7 @@ module.exports = {
 
             await interaction.reply({ embeds: [embed] })
 
-            await browser.close()
+            await page.close()
         } catch(e) {
             console.log(e)
 

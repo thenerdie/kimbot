@@ -6,19 +6,29 @@ const { Client, Collection, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 client.commands = new Collection()
 
-fs.readdirSync("./commands").filter(name => name.endsWith(".js")).forEach(name => {
-    const command = require(`./commands/${name}`)
-    client.commands.set(command.data.name, command)
-})
+const puppeteer = require('puppeteer')
 
-client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
+async function launch() {
+  let browser = await puppeteer.launch({
+    executablePath: config.browserDirectory
+  })
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
+  fs.readdirSync("./commands").filter(name => name.endsWith(".js")).forEach(name => {
+      const command = require(`./commands/${name}`)
+      client.commands.set(command.data.name, command)
+  })
 
-  client.commands.get(interaction.commandName).execute(interaction)
-});
+  client.on('ready', () => {
+      console.log(`Logged in as ${client.user.tag}!`);
+  });
 
-client.login(config.token);
+  client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
+
+    client.commands.get(interaction.commandName).execute(interaction, browser)
+  });
+
+  client.login(config.token);
+}
+
+launch()
